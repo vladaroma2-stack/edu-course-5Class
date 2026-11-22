@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Образовательная платформа</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            width: 100%;
+            max-width: 480px;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        h1 { font-size: 24px; color: #1a202c; margin-bottom: 12px; }
+        p { color: #4a5568; font-size: 15px; line-height: 1.5; margin-bottom: 24px; }
+        
+        /* Кнопка Google */
+        .google-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            background: #ffffff;
+            color: #3c4043;
+            border: 1px solid #dadce0;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .google-btn:hover {
+            background: #f8f9fa;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        /* Личный кабинет */
+        .avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            border: 3px solid #4285F4;
+        }
+        .lesson-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .lesson-card h3 { font-size: 16px; color: #2d3748; margin-bottom: 6px; }
+        .lesson-card span { font-size: 13px; color: #718096; }
+        
+        .logout-btn {
+            background: transparent;
+            color: #e53e3e;
+            border: 1px solid #feb2b2;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover { background: #fff5f5; }
+        .error-msg { color: #e53e3e; font-size: 13px; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Экран входа / регистрации -->
+    <div id="loginSection">
+        <h1>Образовательная программа</h1>
+        <p>Войдите или зарегистрируйтесь в один клик, чтобы открыть доступ к материалам курса.</p>
+        <button id="loginBtn" class="google-btn">
+            <svg width="20" height="20" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            Продолжить с Google
+        </button>
+        <div id="errorBox" class="error-msg"></div>
+    </div>
+
+    <!-- Экран личного кабинета (появится после входа) -->
+    <div id="userSection" style="display: none;">
+        <img id="userAvatar" class="avatar" src="" alt="Фото профиля">
+        <h1>Добро пожаловать, <span id="userName"></span>!</h1>
+        <p id="userEmail"></p>
+        
+        <div class="lesson-card">
+            <h3>Урок 1. Введение в программу</h3>
+            <span>Статус: Доступ открыт • Материалы готовы к изучению</span>
+        </div>
+
+        <button id="logoutBtn" class="logout-btn">Выйти из аккаунта</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-analytics.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://gstatic.com";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDRZ2v_L7geSjtrE9foFfqXLO5ZcRvlA7Q",
+        authDomain: "myfirstapp-24bb8.firebaseapp.com",
+        projectId: "myfirstapp-24bb8",
+        storageBucket: "myfirstapp-24bb8.firebasestorage.app",
+        messagingSenderId: "530845780963",
+        appId: "1:530845780963:web:58b30c43d3a27b7b52eed6",
+        measurementId: "G-T5495CTVBC"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    const loginSection = document.getElementById('loginSection');
+    const userSection = document.getElementById('userSection');
+    const errorBox = document.getElementById('errorBox');
+
+    // Вход и регистрация в один клик
+    document.getElementById('loginBtn').addEventListener('click', () => {
+        errorBox.style.display = 'none';
+        signInWithPopup(auth, provider)
+            .catch((error) => {
+                errorBox.textContent = "Ошибка: " + error.message;
+                errorBox.style.display = 'block';
+            });
+    });
+
+    // Выход
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        signOut(auth);
+    });
+
+    // Отслеживание состояния входа
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            loginSection.style.display = 'none';
+            userSection.style.display = 'block';
+            document.getElementById('userName').textContent = user.displayName || 'Ученик';
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userAvatar').src = user.photoURL || 'https://gravatar.com';
+        } else {
+            loginSection.style.display = 'block';
+            userSection.style.display = 'none';
+        }
+    });
+</script>
+
+</body>
+</html>
